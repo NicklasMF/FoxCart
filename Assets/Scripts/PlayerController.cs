@@ -4,75 +4,54 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
 
-	public Transform path;
-	public float maxSteerAngle = 45f;
-	List<Transform> nodes;
-	int currentNode = 0;
-	float maxMotorTorque = 80f;
-	float maxBrakeTorque = 150f;
-	float currentSpeed;
-	float maxSpeed = 100f;
-	bool isBraking = false;
+    public GameObject gameController;
 
-	public WheelCollider wheelFR;
-	public WheelCollider wheelFL;
-	public WheelCollider wheelRR;
-	public WheelCollider wheelRL;
+    public string name;
+    float startTime;
+    public float bestTime;
 
-	void Start() {
-		Transform[] pathTransform = path.GetComponentsInChildren<Transform>();
-		nodes = new List<Transform>();
+    bool hasCrossedFirstTime = false;
+    public bool raceStarted = false;
 
-		for (int i = 0; i < pathTransform.Length; i++) {
-			if (pathTransform[i] != path.transform) {
-				nodes.Add(pathTransform[i]);
-			}
-		}
-	}
+    void Start() {
+        raceStarted = false;
 
-	void FixedUpdate() {
-		ApplySteer();
-		Drive();
-		Braking();
-		CheckWaypointDistance();
-	}
+        gameController = GameObject.FindGameObjectWithTag("GameController");
+        gameController.GetComponent<GameController>().startGame += Drive;
+    }
 
-	void ApplySteer() {
-		Vector3 relativeVector = transform.InverseTransformPoint(nodes[currentNode].position);
-		float newSteer = (relativeVector.x / relativeVector.magnitude) * maxSteerAngle;
-		wheelFL.steerAngle = newSteer;
-		wheelFR.steerAngle = newSteer;
-	}
+    void Drive() {
+        raceStarted = true;
+        GetComponent<CarEngine>().CreatePath();
+    }
 
-	void Drive() {
-		currentSpeed = 2 * Mathf.PI * wheelFL.radius * wheelFL.rpm * 60 / 100;
+    void OnTriggerEnter(Collider other) {
+        if (other.CompareTag("GoalLine")) {
+            if (hasCrossedFirstTime) {
+                //print(GetTimeString());
+               // CheckBestTime();
+                startTime = gameController.GetComponent<GameController>().time;
+            } else {
+                hasCrossedFirstTime = true;
+            }
+        }
+    }
 
-		if (currentNode < maxSpeed && !isBraking) {
-			wheelFL.motorTorque = maxMotorTorque;
-			wheelFR.motorTorque = maxMotorTorque;
-		} else {
-			wheelFL.motorTorque = 0;
-			wheelFR.motorTorque = 0;
-		}
-	}
+    /*public string GetTimeString() {
+        int minutes = (int) Mathf.Floor(time / 60);
+        int seconds = (int) time % 60;
+        float mSeconds = (float) Mathf.Floor((time % 1) * 1000f);
 
-	void CheckWaypointDistance() {
-		if (Vector3.Distance(transform.position, nodes[currentNode].position) < 1f) {
-			if (currentNode == nodes.Count - 1) {
-				currentNode = 0;
-			} else {
-				currentNode++;
-			}
-		}
-	}
+        return minutes + ":" + seconds + ":" + mSeconds;
+    }
 
-	void Braking() {
-		if (isBraking) {
-			wheelRL.brakeTorque = maxBrakeTorque;
-			wheelRR.brakeTorque = maxBrakeTorque;
-		} else {
-			wheelRL.brakeTorque = maxBrakeTorque;
-			wheelRR.brakeTorque = maxBrakeTorque;
-		}
-	}
+    void CheckBestTime() {
+        if (bestTime == 0) {
+            bestTime = time;
+        } else if (time < bestTime) {
+            bestTime = time;
+            print("Ny bedste tid");
+        }
+    }*/
+
 }
